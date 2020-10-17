@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "890050613703",
+    "firebase_url": "https://findmydost.firebaseio.com",
+    "project_id": "findmydost",
+    "storage_bucket": "findmydost.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:890050613703:android:6404b44a6958aca15189e2",
+        "android_client_info": {
+          "package_name": "com.example.findmydost"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "890050613703-m03trfg7jco1kujnelreak4hfjt6dfvm.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.findmydost",
+            "certificate_hash": "c69445e42d5355c6966779e0e3033bd75a3e0711"
+          }
+        },
+        {
+          "client_id": "890050613703-cmar9g3k8sntjkpn9pkuj5i7ethds9hu.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAICUdUN0FrQYLThpOW3L0f1GvQ_8jygDU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "890050613703-cmar9g3k8sntjkpn9pkuj5i7ethds9hu.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
