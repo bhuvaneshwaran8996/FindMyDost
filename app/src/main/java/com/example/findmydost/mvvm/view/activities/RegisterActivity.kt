@@ -1,12 +1,14 @@
 package com.example.findmydost.mvvm.view.activities
 
 import android.content.Intent
+import android.content.Intent.FLAG_ACTIVITY_MULTIPLE_TASK
 import android.content.SharedPreferences
 import android.os.Bundle
 import android.util.Log
 import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import com.example.findmydost.DostApplication
 import com.example.findmydost.R
 import com.example.findmydost.databinding.ActivityRegisterBinding
 import com.example.findmydost.local.prefs.PreferenceHelperImp
@@ -26,6 +28,7 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseAuth.AuthStateListener
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.GoogleAuthProvider
+import com.google.firebase.firestore.FirebaseFirestore
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.android.synthetic.main.activity_register.*
 import javax.inject.Inject
@@ -47,6 +50,7 @@ class RegisterActivity : AppCompatActivity(), View.OnClickListener {
     @Inject
     lateinit var mFirebaseAuth: FirebaseAuth;
 
+
     @Inject
     lateinit var mUser: User;
 
@@ -56,6 +60,9 @@ class RegisterActivity : AppCompatActivity(), View.OnClickListener {
 
     @Inject
     lateinit var loginManager: LoginManager;
+
+    @Inject
+    lateinit var mFireStoreInstance: FirebaseFirestore;
 
     var loginType: String? = null;
 
@@ -94,6 +101,7 @@ class RegisterActivity : AppCompatActivity(), View.OnClickListener {
         binding = ActivityRegisterBinding.inflate(layoutInflater)
         val view = binding.root
         setContentView(view)
+
 
         binding.loginButton.setOnClickListener(this)
         binding.signInButton.setOnClickListener(this);
@@ -140,11 +148,13 @@ class RegisterActivity : AppCompatActivity(), View.OnClickListener {
 
     fun setupGoogleAuth() {
 
+        mAuthListener?.let { mFirebaseAuth.removeAuthStateListener(it) };
         val signInIntent = mGoogleSingnInClient.signInIntent
         startActivityForResult(signInIntent, RC_SIGN_IN)
     }
 
      fun setupFacebookAuth() {
+         mAuthListener?.let { mFirebaseAuth.removeAuthStateListener(it) };
         binding.myProgressBar.visibility = View.VISIBLE;
         binding.loginButton.setReadPermissions("email", "public_profile")
         binding.loginButton.registerCallback(mCallbackManager, object :
@@ -184,11 +194,12 @@ class RegisterActivity : AppCompatActivity(), View.OnClickListener {
                 } else {
                     // If sign in fails, display a message to the user.
                     Log.w(TAG, "signInWithCredential:failure", task.exception)
-//                    Toast.makeText(
-//                        baseContext, "Authentication failed.",
-//                        Toast.LENGTH_SHORT
-//                    ).show()
-                    updateUI(null)
+                    Toast.makeText(
+                        baseContext, task.exception?.message,
+                        Toast.LENGTH_LONG
+                    ).show()
+                    LoginManager.getInstance().logOut();
+                 //   updateUI(null)
                 }
 
                 // ...
@@ -207,17 +218,32 @@ class RegisterActivity : AppCompatActivity(), View.OnClickListener {
 
                 mUser.displayName = user.displayName
                 mUser.email = user.email
-                mUser.photoUrl = user.photoUrl
+                mUser.photoUrl = user.photoUrl.toString()
                 mUser.phoneNumber = user.phoneNumber;
                 mUser.authType = mPreferenceHelperImp.getLoginData();
+                mUser.uid = user.uid;
+
+                mFireStoreInstance.collection("users").document(mUser.uid.toString())
+                    .set(mUser)
+                    .addOnSuccessListener {
+                        Log.d(TAG, "DocumentSnapshot successfully written!")
+                    }
+                    .addOnFailureListener {
+                            e -> Log.w(TAG, "Error writing document", e)
+                    }
 
 
 
-                startActivity(Intent(this@RegisterActivity, DostActivity::class.java))
+                var intent = Intent(this@RegisterActivity, DostActivity::class.java);
+                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK or FLAG_ACTIVITY_MULTIPLE_TASK)
+                startActivity(intent)
+
                 Toast.makeText(
                     baseContext, user?.email,
                     Toast.LENGTH_SHORT
                 ).show()
+                finish();
+
 
 
 
@@ -230,6 +256,7 @@ class RegisterActivity : AppCompatActivity(), View.OnClickListener {
             }
 
         }catch (e:Exception){
+            Log.d(TAG, "updateUI: "+e.message)
             Toast.makeText(this@RegisterActivity,"Authentication failed",Toast.LENGTH_SHORT).show()
         }
 
@@ -297,6 +324,11 @@ class RegisterActivity : AppCompatActivity(), View.OnClickListener {
     companion object {
 
         private val RC_SIGN_IN = 101;
+    }
+
+    override fun onBackPressed() {
+        super.onBackPressed()
+        finish()
     }
 }
 
