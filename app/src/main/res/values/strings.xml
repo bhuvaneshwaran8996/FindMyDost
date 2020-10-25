@@ -19,5 +19,6 @@
     <string name="dummy_content">DUMMY\nCONTENT</string>
     <!-- TODO: Remove or change this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="google_maps_key">AIzaSyD9mm0TXmlG1Iy1dujk7fHXTzHqU5cJwoI</string>
 
 </resources>

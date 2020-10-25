@@ -65,14 +65,14 @@ class DostActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
 
         binding = DataBindingUtil.setContentView<ActivityDostBinding>(this, R.layout.activity_dost)
-        setSupportActionBar(binding.DostToolbar.toolbar)
+//        setSupportActionBar(binding.DostToolbar.toolbar)
+
 
         initDrawer()
-
         val navController = findNavController(R.id.nav_host_fragment)
 
         nav_view.setupWithNavController(navController)
-        bottomNavigationView.setupWithNavController(navController)
+        //  bottomNavigationView.setupWithNavController(navController)
 
         var headerView = nav_view.getHeaderView(0)
         mUserName = headerView.findViewById<TextView>(R.id.txt_name)
@@ -83,7 +83,6 @@ class DostActivity : AppCompatActivity() {
         headerView.findViewById<CircleImageView>(R.id.profile_pic).let {
             Glide.with(this).load(mUser.photoUrl).into(it)
         }
-
         navController
             .addOnDestinationChangedListener { _, destination, _ ->
                 when (destination.id) {
@@ -94,39 +93,19 @@ class DostActivity : AppCompatActivity() {
             }
 
 
-        nav_view.setNavigationItemSelectedListener(object :
-            NavigationView.OnNavigationItemSelectedListener {
-            override fun onNavigationItemSelected(menuItem: MenuItem): Boolean {
-                val id: Int = menuItem.getItemId()
-                if (id == R.id.signout) {
-                    signOut();
+        nav_view.setNavigationItemSelectedListener { menuItem ->
+            val id: Int = menuItem.getItemId()
+            if (id == R.id.signout) {
+                signOut();
 
-                }
-
-                drawer.closeDrawer(GravityCompat.START)
-                return true
             }
-        })
+
+            drawer.closeDrawer(GravityCompat.START)
+            true
+        }
 
     }
 
-    fun initDrawer() {
-
-        drawer = findViewById(R.id.drawer_layout)
-        binding.DostToolbar.toolbar.setNavigationIcon(R.drawable.ic_launcher_background)
-        toggle = ActionBarDrawerToggle(
-            this,
-            drawer,
-            binding.DostToolbar.toolbar,
-            R.string.navigation_drawer_open,
-            R.string.navigation_drawer_close
-        )
-        drawer.addDrawerListener(toggle)
-        toggle.syncState();
-        supportActionBar?.title = "";
-
-
-    }
 
     fun signOut(): Boolean {
 
@@ -150,6 +129,23 @@ class DostActivity : AppCompatActivity() {
         return true
     }
 
+
+    private fun initDrawer() {
+        drawer = findViewById(R.id.drawer_layout)
+        binding.DostToolbar.toolbar.setNavigationIcon(R.drawable.ic_launcher_background)
+        toggle = ActionBarDrawerToggle(
+            this,
+            drawer,
+            binding.DostToolbar.toolbar,
+            R.string.navigation_drawer_open,
+            R.string.navigation_drawer_close
+        )
+        drawer.addDrawerListener(toggle)
+        toggle.syncState();
+        supportActionBar?.title = "";
+
+
+    }
 
     override fun onBackPressed() {
         super.onBackPressed()

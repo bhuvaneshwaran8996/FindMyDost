@@ -6,13 +6,20 @@ import android.content.SharedPreferences
 import android.os.Bundle
 import android.util.Log
 import android.view.View
+import android.view.ViewGroup
 import android.widget.Toast
+import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
+import androidx.fragment.app.viewModels
+import androidx.lifecycle.Observer
+import androidx.lifecycle.ViewModel
 import com.example.findmydost.DostApplication
 import com.example.findmydost.R
 import com.example.findmydost.databinding.ActivityRegisterBinding
 import com.example.findmydost.local.prefs.PreferenceHelperImp
 import com.example.findmydost.mvvm.model.User
+import com.example.findmydost.mvvm.viewmodel.RegisterViewModel
+import com.example.findmydost.util.LoginState
 import com.facebook.AccessToken
 import com.facebook.CallbackManager
 import com.facebook.FacebookCallback
@@ -41,6 +48,8 @@ class RegisterActivity : AppCompatActivity(), View.OnClickListener {
     private lateinit var mFirebaseUser: FirebaseUser;
     private var mAuthListener: AuthStateListener? = null
 
+    private val registerViewModel: RegisterViewModel by viewModels()
+
     @Inject
     lateinit var mGoogleSingnInClient: GoogleSignInClient;
 
@@ -61,6 +70,8 @@ class RegisterActivity : AppCompatActivity(), View.OnClickListener {
     @Inject
     lateinit var loginManager: LoginManager;
 
+    var firebaseUser: FirebaseUser? = null;
+
     @Inject
     lateinit var mFireStoreInstance: FirebaseFirestore;
 
@@ -71,97 +82,145 @@ class RegisterActivity : AppCompatActivity(), View.OnClickListener {
         super.onStart()
 
         if (mFirebaseAuth.currentUser != null) {
-            mAuthListener?.let {
-                mFirebaseAuth.addAuthStateListener(it)
-                if (mFirebaseAuth.currentUser != null) {
+            if (mPreferenceHelperImp.getLoginData().equals("1")) {
 
+                loginType = "FB";
 
-                    updateUI(mFirebaseAuth.currentUser)
+            } else if (mPreferenceHelperImp.getLoginData().equals("2")) {
 
-
-                    //move to main activity
-
-                } else {
-                    mAuthListener?.let {
-                        mFirebaseAuth.removeAuthStateListener(it)
-                    }
-                }
+                loginType = "GOOGLE";
 
             }
+            createUserObject(mFirebaseAuth.currentUser)
+
+            navigateToDostActivity();
         }
+    }
+
+    public fun navigateToDostActivity() {
+
+
+        val intent = Intent(this, DostActivity::class.java);
+        intent.apply {
+            addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK)
+        }
+        startActivity(intent);
+        finish();
     }
 
     override fun onStop() {
         super.onStop()
-        mAuthListener?.let { mFirebaseAuth.removeAuthStateListener(it) };
+
+    }
+    fun createUserObject(firebaseUser: FirebaseUser?) {
+        mUser.email = firebaseUser?.email;
+        mUser.photoUrl = firebaseUser?.photoUrl.toString();
+        mUser.phoneNumber = firebaseUser?.phoneNumber;
+        mUser.email = firebaseUser?.email;
+        mUser.displayName = firebaseUser?.displayName;
+        mUser.authType = loginType;
+        mUser.uid = firebaseUser?.uid;
+
+
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
         binding = ActivityRegisterBinding.inflate(layoutInflater)
         val view = binding.root
         setContentView(view)
 
 
-        binding.loginButton.setOnClickListener(this)
-        binding.signInButton.setOnClickListener(this);
-        binding.logout.setOnClickListener {
-            signOut()
-        };
-        mAuthListener = AuthStateListener { firebaseAuth: FirebaseAuth ->
-            val user = firebaseAuth.currentUser
-            if (user != null) {
-                // User is signed in
-                Log.d(TAG, "onAuthStateChanged:signed_in:" + user.uid)
-            } else {
-                // User is signed out
-                Log.d(TAG, "onAuthStateChanged:signed_out")
+        binding.registerFacebook.setOnClickListener(this)
+        binding.registerGoogle.setOnClickListener(this);
+
+        var measuredHeight = binding.registerFacebook.measuredHeight
+
+
+
+
+        registerViewModel.loginMediatorLiveData.observe(this, Observer {
+
+            when (it.loginStatus) {
+
+                LoginState.LOGGED_IN_FB -> pocessFbAuth()
+                LoginState.LOGGED_IN_GOOGLE -> pocessGoogleAuth()
+                LoginState.LOADING -> binding.myProgressBar.visibility = View.VISIBLE;
+                LoginState.LOGIN_FAILED -> failureAuth(it.msg)
+
             }
-            if (user != null) {
 
 
+        })
 
-                Log.d(
-                    TAG,
-                    """
-                        User details : ${user.displayName}${user.email}
-                        ${user.photoUrl}
-                        ${user.uid}
-                        ${user.getIdToken(true)}
-                        ${user.providerId}
-                        """.trimIndent()
+        registerViewModel.userRegisteLiveData.observe(this, Observer{
 
-
-                )
+            if(it){
+                navigateToDostActivity()
+            }else{
+                Toast.makeText(this, "something went wrong, please ty again", Toast.LENGTH_LONG).show()
             }
-        }
 
-}
+        })
+
+
+
+    }
+
+    fun failureAuth(msg: String) {
+
+        binding.myProgressBar.visibility = View.GONE;
+        Toast.makeText(this, msg, Toast.LENGTH_LONG).show()
+    }
+
+    fun pocessGoogleAuth() {
+        mPreferenceHelperImp.saveLoginData(2);
+        loginType = "GOOGLE";
+        createUserObject(mFirebaseAuth?.currentUser)
+        binding.myProgressBar.visibility = View.GONE;
+        registerViewModel.registerUser();
+
+
+
+    }
+
+    fun pocessFbAuth() {
+
+
+        mPreferenceHelperImp.saveLoginData(1);
+        loginType = "FB";
+        createUserObject(mFirebaseAuth?.currentUser)
+        binding.myProgressBar.visibility = View.GONE;
+        registerViewModel.registerUser();
+
+    }
 
     override fun onClick(view: View?) {
 
         when (view?.id) {
-            R.id.login_button -> setupFacebookAuth()
-            R.id.sign_in_button -> setupGoogleAuth()
+            R.id.register_facebook -> setupFacebookAuth()
+            R.id.register_google -> setupGoogleAuth()
         }
     }
 
     fun setupGoogleAuth() {
 
-        mAuthListener?.let { mFirebaseAuth.removeAuthStateListener(it) };
+//        mAuthListener?.let { mFirebaseAuth.removeAuthStateListener(it) };
         val signInIntent = mGoogleSingnInClient.signInIntent
         startActivityForResult(signInIntent, RC_SIGN_IN)
     }
 
-     fun setupFacebookAuth() {
-         mAuthListener?.let { mFirebaseAuth.removeAuthStateListener(it) };
-        binding.myProgressBar.visibility = View.VISIBLE;
-        binding.loginButton.setReadPermissions("email", "public_profile")
-        binding.loginButton.registerCallback(mCallbackManager, object :
+    fun setupFacebookAuth() {
+
+        binding.registerFacebook.setReadPermissions("email", "public_profile")
+        binding.registerFacebook.registerCallback(mCallbackManager, object :
             FacebookCallback<LoginResult> {
             override fun onSuccess(loginResult: LoginResult) {
                 Log.d(TAG, "facebook:onSuccess:$loginResult")
-                handleFacebookAccessToken(loginResult.accessToken)
+                registerViewModel.handleFacebookAccessToken(loginResult.accessToken);
+
+
             }
 
             override fun onCancel() {
@@ -170,6 +229,8 @@ class RegisterActivity : AppCompatActivity(), View.OnClickListener {
             }
 
             override fun onError(error: FacebookException) {
+                LoginManager.getInstance().logOut()
+                Toast.makeText(this@RegisterActivity,error.toString(),Toast.LENGTH_LONG).show();
                 Log.d(TAG, "facebook:onError", error)
                 // ...
             }
@@ -178,89 +239,6 @@ class RegisterActivity : AppCompatActivity(), View.OnClickListener {
 
     }
 
-    private fun handleFacebookAccessToken(accessToken: AccessToken?) {
-        Log.d(TAG, "handleFacebookAccessToken: " + accessToken)
-        val credential = FacebookAuthProvider.getCredential(accessToken?.token!!)
-        mFirebaseAuth.signInWithCredential(credential)
-            .addOnCompleteListener(this) { task ->
-                if (task.isSuccessful) {
-                    loginType = "FB";
-                    // Sign in success, update UI with the signed-in user's information
-                    Log.d(TAG, "signInWithCredential:success")
-                    val user = FirebaseAuth.getInstance().currentUser
-                    mPreferenceHelperImp.saveLoginData(1) //fb
-
-                    updateUI(user)
-                } else {
-                    // If sign in fails, display a message to the user.
-                    Log.w(TAG, "signInWithCredential:failure", task.exception)
-                    Toast.makeText(
-                        baseContext, task.exception?.message,
-                        Toast.LENGTH_LONG
-                    ).show()
-                    LoginManager.getInstance().logOut();
-                 //   updateUI(null)
-                }
-
-                // ...
-            }
-
-
-
-    }
-
-    private fun updateUI(user: FirebaseUser?) {
-
-        try{
-            if(user!=null){
-                binding.myProgressBar.visibility = View.GONE;
-
-
-                mUser.displayName = user.displayName
-                mUser.email = user.email
-                mUser.photoUrl = user.photoUrl.toString()
-                mUser.phoneNumber = user.phoneNumber;
-                mUser.authType = mPreferenceHelperImp.getLoginData();
-                mUser.uid = user.uid;
-
-                mFireStoreInstance.collection("users").document(mUser.uid.toString())
-                    .set(mUser)
-                    .addOnSuccessListener {
-                        Log.d(TAG, "DocumentSnapshot successfully written!")
-                    }
-                    .addOnFailureListener {
-                            e -> Log.w(TAG, "Error writing document", e)
-                    }
-
-
-
-                var intent = Intent(this@RegisterActivity, DostActivity::class.java);
-                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK or FLAG_ACTIVITY_MULTIPLE_TASK)
-                startActivity(intent)
-
-                Toast.makeText(
-                    baseContext, user?.email,
-                    Toast.LENGTH_SHORT
-                ).show()
-                finish();
-
-
-
-
-
-            }else{
-                Toast.makeText(
-                    baseContext, "user signed out",
-                    Toast.LENGTH_SHORT
-                ).show()
-            }
-
-        }catch (e:Exception){
-            Log.d(TAG, "updateUI: "+e.message)
-            Toast.makeText(this@RegisterActivity,"Authentication failed",Toast.LENGTH_SHORT).show()
-        }
-
-    }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
@@ -273,7 +251,7 @@ class RegisterActivity : AppCompatActivity(), View.OnClickListener {
                 // Google Sign In was successful, authenticate with Firebase
                 val account = task.getResult(ApiException::class.java)!!
                 Log.d(TAG, "firebaseAuthWithGoogle:" + account.id)
-                firebaseAuthWithGoogle(account.idToken!!)
+                registerViewModel.firebaseAuthWithGoogle(account.idToken!!)
             } catch (e: ApiException) {
                 // Google Sign In failed, update UI appropriately
                 Log.w(TAG, "Google sign in failed", e)
@@ -283,44 +261,6 @@ class RegisterActivity : AppCompatActivity(), View.OnClickListener {
     }
 
 
-    private fun firebaseAuthWithGoogle(idToken: String) {
-        binding.myProgressBar.visibility = View.VISIBLE;
-        val credential = GoogleAuthProvider.getCredential(idToken, null)
-        mFirebaseAuth.signInWithCredential(credential)
-            .addOnCompleteListener(this) { task ->
-                if (task.isSuccessful) {
-                    loginType = "GOOGLE";
-                    // Sign in success, update UI with the signed-in user's information
-                    Log.d(TAG, "signInWithCredential:success")
-                    val user = mFirebaseAuth.currentUser
-                    mPreferenceHelperImp.saveLoginData(2) //fb
-                    updateUI(user)
-
-                } else {
-                    // If sign in fails, display a message to the user.
-                    Log.w(TAG, "signInWithCredential:failure", task.exception)
-                    // ...
-                    Snackbar.make(root_view, "Authentication Failed.", Snackbar.LENGTH_SHORT).show()
-                    updateUI(null)
-                }
-
-                // ...
-            }
-    }
-     private fun signOut() {
-
-         // Firebase sign out
-         mFirebaseAuth.signOut()
-        loginManager.logOut();
-         // Google sign out
-        mGoogleSingnInClient.signOut().let {
-            if(it.isSuccessful){
-
-                updateUI(null)
-            }
-        }
-     }
-
     companion object {
 
         private val RC_SIGN_IN = 101;
@@ -329,6 +269,7 @@ class RegisterActivity : AppCompatActivity(), View.OnClickListener {
     override fun onBackPressed() {
         super.onBackPressed()
         finish()
+
     }
 }
 

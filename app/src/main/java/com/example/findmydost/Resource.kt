@@ -1,7 +1,14 @@
 package com.example.findmydost
 
-import com.example.findmydost.util.Status
 
+
+enum class Status{
+    SUCCESS,
+    ERROR,
+    LOADING
+
+
+}
 data class Resource<out T>(val status: Status, val data: T?, val message: String?) {
 
     companion object {

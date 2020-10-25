@@ -16,6 +16,7 @@ import javax.inject.Singleton
      var email:String? = null
      var photoUrl: String? = null
      var authType:String? = null
+     var online:Boolean? = null
      var phoneNumber:String? = null
      var uid:String? = null
      @ServerTimestamp
