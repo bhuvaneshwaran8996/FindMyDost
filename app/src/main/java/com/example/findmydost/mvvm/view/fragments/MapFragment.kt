@@ -101,6 +101,7 @@ class MapFragment : Fragment(), EasyPermissions.PermissionCallbacks,GoogleMap.On
 
         binding.addButton.setOnClickListener {
 
+            
             if(isopen){
                 binding.addButton.startAnimation(fab_clock);
                 binding.editButton.startAnimation(fab_open);
