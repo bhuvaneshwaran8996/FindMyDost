@@ -56,7 +56,6 @@ object ActivityModule {
     @Provides
     @ActivityScoped
     fun provideFirebaseAuth(): FirebaseAuth {
-
         return  FirebaseAuth.getInstance();
     }
 

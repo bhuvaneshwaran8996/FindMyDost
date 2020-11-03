@@ -6,6 +6,7 @@ import com.example.findmydost.local.prefs.PreferenceHelper
 import com.example.findmydost.local.prefs.PreferenceHelperImp
 import com.example.findmydost.util.Constants
 import com.facebook.login.LoginManager
+import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.firebase.firestore.FirebaseFirestore
 import dagger.Binds
 import dagger.Module
@@ -13,6 +14,7 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.components.ApplicationComponent
 import dagger.hilt.android.qualifiers.ApplicationContext
+import dagger.hilt.android.scopes.ServiceScoped
 import javax.inject.Singleton
 
 
@@ -21,11 +23,14 @@ import javax.inject.Singleton
 abstract class ApplicationModule {
 
 
+
     @Binds
     @Singleton
     abstract fun bindPreferenceData(preferenceHelper: PreferenceHelper):PreferenceHelperImp
 
     companion object{
+
+
         @Provides
         @Singleton
         fun  provideSharedPreferences(@ApplicationContext context: Context):SharedPreferences  = context.getSharedPreferences(Constants.PREF_NAME, Context.MODE_PRIVATE);
@@ -44,15 +49,16 @@ abstract class ApplicationModule {
         @Singleton
         fun provideFireStoreInstance():FirebaseFirestore = FirebaseFirestore.getInstance()
 
-
-
-
-
-
-
-
+        @Singleton
+        @Provides
+        fun provideFusedLocationProviderClient(
+            @ApplicationContext app: Context
+        ) = FusedLocationProviderClient(app)
 
     }
+
+
+
 
 
 

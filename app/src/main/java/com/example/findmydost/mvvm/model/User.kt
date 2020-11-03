@@ -19,6 +19,9 @@ import javax.inject.Singleton
      var online:Boolean? = null
      var phoneNumber:String? = null
      var uid:String? = null
+     var lat:String?=null
+     var lon:String?=null
+     var status:String? = null
      @ServerTimestamp
      var  serverTimeStamo: Date?=null
 }

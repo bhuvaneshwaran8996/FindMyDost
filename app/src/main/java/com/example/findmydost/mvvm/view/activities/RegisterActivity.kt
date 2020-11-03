@@ -159,6 +159,8 @@ class RegisterActivity : AppCompatActivity(), View.OnClickListener {
             if(it){
                 navigateToDostActivity()
             }else{
+
+
                 Toast.makeText(this, "something went wrong, please ty again", Toast.LENGTH_LONG).show()
             }
 

@@ -2,8 +2,9 @@ package com.example.findmydost.mvvm.view.activities
 
 import android.content.Intent
 import android.os.Bundle
+import android.view.Menu
+import android.view.MenuInflater
 import android.view.MenuItem
-import android.view.View
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.ActionBarDrawerToggle
@@ -11,32 +12,34 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.GravityCompat
 import androidx.databinding.DataBindingUtil
 import androidx.drawerlayout.widget.DrawerLayout
+import androidx.fragment.app.Fragment
 import androidx.navigation.NavController
 import androidx.navigation.Navigation
 import androidx.navigation.findNavController
-import androidx.navigation.ui.AppBarConfiguration
-import androidx.navigation.ui.setupActionBarWithNavController
+import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.ui.setupWithNavController
 import com.bumptech.glide.Glide
-import com.example.findmydost.DostApplication
 import com.example.findmydost.R
 import com.example.findmydost.databinding.ActivityDostBinding
 import com.example.findmydost.mvvm.model.User
-import com.facebook.CallbackManager
+import com.example.findmydost.mvvm.view.fragments.MapFragment
 import com.facebook.login.LoginManager
 import com.google.android.gms.auth.api.signin.GoogleSignInClient
-import com.google.android.material.navigation.NavigationView
+import com.google.android.gms.maps.GoogleMap
+
 import com.google.firebase.auth.FirebaseAuth
 import dagger.hilt.android.AndroidEntryPoint
 import de.hdodenhof.circleimageview.CircleImageView
 import kotlinx.android.synthetic.main.activity_dost.*
-import kotlinx.android.synthetic.main.toolbar.view.*
+import kotlinx.android.synthetic.main.fragment_map.*
+import java.lang.Exception
 import javax.inject.Inject
 
 @AndroidEntryPoint
 class DostActivity : AppCompatActivity() {
 
 
+    private var currentFagment: Int = 0;
     private lateinit var drawer: DrawerLayout
     private lateinit var toggle: ActionBarDrawerToggle
 
@@ -65,7 +68,8 @@ class DostActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
 
         binding = DataBindingUtil.setContentView<ActivityDostBinding>(this, R.layout.activity_dost)
-//        setSupportActionBar(binding.DostToolbar.toolbar)
+        setSupportActionBar(binding.DostToolbar.toolbar)
+
 
 
         initDrawer()
@@ -86,6 +90,8 @@ class DostActivity : AppCompatActivity() {
         navController
             .addOnDestinationChangedListener { _, destination, _ ->
                 when (destination.id) {
+
+                    R.id.mapFragment -> currentFagment = destination.id;
 //                    R.id.mapFragment, R.id.groupFragment, R.id.settingsFragment ->
 //                        bottomNavigationView.visibility = View.VISIBLE
 //                    else -> bottomNavigationView.visibility = View.GONE
@@ -150,6 +156,60 @@ class DostActivity : AppCompatActivity() {
     override fun onBackPressed() {
         super.onBackPressed()
         finish();
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+
+        val navHostFragment: NavHostFragment =
+            supportFragmentManager.findFragmentById(R.id.nav_host_fragment) as NavHostFragment;
+        var fagment = navHostFragment.childFragmentManager.fragments.get(0) as Fragment
+        var mapFagment:MapFragment? = fagment as MapFragment;
+       /* var mapFagment: MapFragment? =
+            navHostFragment.navController.currentDestination?.id as MapFragment;*/
+        return when (item.itemId) {
+            R.id.normal_map -> {
+                // map.setM(GoogleMap.MAP_TYPE_NORMAL)
+
+                mapFagment?.let {
+                    it.mMap?.mapType = GoogleMap.MAP_TYPE_NORMAL;
+
+                }
+                true
+            }
+            R.id.hybrid_map -> {
+                mapFagment?.let {
+                    it.mMap?.mapType = GoogleMap.MAP_TYPE_HYBRID;
+
+                }
+                true
+            }
+            R.id.satellite_map -> {
+                //  map.setMapType(GoogleMap.MAP_TYPE_SATELLITE)
+                mapFagment?.let {
+                    it.mMap?.mapType = GoogleMap.MAP_TYPE_SATELLITE;
+
+                }
+                true
+            }
+            R.id.terrain_map -> {
+                //    map.setMapType(GoogleMap.MAP_TYPE_TERRAIN)
+                mapFagment?.let {
+                    it.mMap?.mapType = GoogleMap.MAP_TYPE_TERRAIN;
+
+                }
+                true
+            }
+            else -> return super.onOptionsItemSelected(item);
+        }
+    }
+
+
+
+    override fun onCreateOptionsMenu(menu: Menu?): Boolean {
+        val inflater: MenuInflater = menuInflater
+        inflater.inflate(R.menu.map_options, menu)
+        return true;
+
     }
 
 
